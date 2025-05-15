@@ -1,5 +1,5 @@
-// src/components/Login.jsx
-import React, { useState } from 'react';
+// src/pages/Login.jsx
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
@@ -8,42 +8,45 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { user,setUser } = useAuth();
+  const { user, setUser } = useAuth();
   const navigate = useNavigate();
 
+  // 🚫 Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'admin') {
+        navigate('/admin/users');
+      } else {
+        navigate('/dashboard');
+      }
+    }
+  }, [user, navigate]);
+
   const handleLogin = async (e) => {
-  e.preventDefault();
-  setError('');
-  try {
-    const response = await api.post('/auth/login', { email, password });
-    const user = response.data;
-    // console.log(response.data);
-    
-    localStorage.setItem('token', user.token);
-    // console.log("user::::",user);
-    
-    setUser(user);
-    
+    e.preventDefault();
+    setError('');
+    try {
+      const res = await api.post('/auth/login', { email, password });
+      const userData = res.data;
 
-    // Redirect based on role
-    if (user.role === 'admin') {
-      // navigate('/admin/users'); // Admin specific page
-      navigate('/admin/users'); // Admin specific page
-      
-      
-    } else {
-      navigate('/dashboard'); 
-      console.log("cvbn");// User page
-    }
-  } catch (err) {
-    if (err.response && err.response.status === 401) {
-      setError('Invalid email or password.');
-    } else {
-      setError('An unexpected error occurred. Please try again later.');
-    }
-  }
-};
+      localStorage.setItem('token', userData.token);
+      localStorage.setItem('user', JSON.stringify(userData)); // Important: stringify for object
 
+      setUser(userData);
+
+      if (userData.role === 'admin') {
+        navigate('/admin/users');
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (err) {
+      if (err.response?.status === 401) {
+        setError('Invalid email or password.');
+      } else {
+        setError('An unexpected error occurred. Please try again later.');
+      }
+    }
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">

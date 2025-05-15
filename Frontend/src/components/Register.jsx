@@ -72,31 +72,40 @@
 
 
 
-
-import React, { useState } from 'react';
+// src/pages/Register.jsx
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api'; // Ensure this is your configured Axios instance
+import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 
 const Register = () => {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState(''); // Changed from username to name
   const [error, setError] = useState('');
+  const { user } = useAuth();
   const navigate = useNavigate();
+
+  // 🚫 Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'admin') {
+        navigate('/admin/users');
+      } else {
+        navigate('/dashboard');
+      }
+    }
+  }, [user, navigate]);
 
   const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
     try {
-      await api.post('/auth/register', { name, email, password }); // Use 'name' here
+      await api.post('/auth/register', { name, email, password });
       navigate('/login');
     } catch (err) {
-      console.error('Registration error:', err);
-
       if (err.response?.data?.message) {
         setError(err.response.data.message);
-      } else if (err.response?.data?.error) {
-        setError(err.response.data.error);
       } else {
         setError('An unexpected error occurred. Please try again later.');
       }
@@ -146,3 +155,4 @@ const Register = () => {
 };
 
 export default Register;
+
